@@ -60,9 +60,49 @@ Prefer high-signal comments. Avoid nitpicks unless clarity/readability is poor.
 {diff_snippets}
 """
 
-# --- Utility functions (_truncate, _extract_json_block, _build_static_summary, _build_diff_snippets) ---
-# Keep them exactly the same as in the last version I gave you.
-# (Not repeating here for brevity, but they stay unchanged.)
+# --------------------------
+# Utility functions
+# --------------------------
+def _truncate(text: str, max_chars: int) -> str:
+    """Truncate long text safely for prompts."""
+    return text if len(text) <= max_chars else text[:max_chars] + "..."
+
+def _extract_json_block(content: str) -> str:
+    """Extract first valid JSON array block from content string."""
+    try:
+        start = content.index("[")
+        end = content.rindex("]") + 1
+        return content[start:end]
+    except ValueError:
+        return content
+
+def _build_static_summary(diff_files) -> str:
+    """Run static analyzers and return a summarized string."""
+    findings = []
+
+    # Pass the entire list to each analyzer
+    findings.extend(run_python_static(diff_files))
+    findings.extend(run_semgrep(diff_files))
+
+    if not findings:
+        return "No static analysis issues found."
+
+    return "\n".join(
+        f"{finding.file}:{finding.line or '-'} [{finding.severity}] {finding.message}"
+        for finding in findings[:20]
+    )
+
+def _build_diff_snippets(diff_files) -> str:
+    """Collect added lines (truncated) from diff files for LLM context."""
+    snippets = []
+    for file in diff_files:
+        filename = getattr(file, "filename", getattr(file, "file", "unknown"))
+        added_lines = getattr(file, "added_lines", [])
+        if not added_lines:
+            continue
+        snippet = f"{filename}:\n" + "\n".join(added_lines[:MAX_ADDED_LINES_PER_FILE])
+        snippets.append(snippet)
+    return "\n\n".join(snippets)
 
 # --------------------------
 # Public entrypoint
@@ -80,12 +120,12 @@ def run_ai_review(diff_files) -> List[Finding]:
 
     user_msg = USER_INSTRUCTIONS.format(
         static_summary=static_summary,
-        diff_snippets=diff_snippets,
+        diff_snippets=_truncate(diff_snippets, MAX_PROMPT_CHARS),
         max_added=MAX_ADDED_LINES_PER_FILE,
     )
 
     payload = {
-        "model": AI_MODEL,  # now defaults to qwen/qwen3-coder:free
+        "model": AI_MODEL,
         "messages": [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_msg},

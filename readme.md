@@ -5,3 +5,10 @@ pip freeze > requirements.txt
 
 PS C:\Users\ncieb\NewHack> Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
 PS C:\Users\ncieb\NewHack> .venv\Scripts\activate
+
+
+ uvicorn app.main:app --reload
+
+The UI runs on swagger UI managed by the fastAPI 
+
+
