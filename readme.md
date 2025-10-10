@@ -1,13 +1,20 @@
-best practce
 
+## Please Read:
 This creates a list of all packages in your venv
 pip freeze > requirements.txt
 
-PS C:\Users\ncieb\NewHack> Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
-PS C:\Users\ncieb\NewHack> .venv\Scripts\activate
+## This is to set the virtual Env
 
+```bash
+ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+ .venv\Scripts\activate
+```
 
+## This is to start the fastAPI Server:
+
+```bash
  uvicorn app.main:app --reload
+```
 
 The UI runs on swagger UI managed by the fastAPI 
 
